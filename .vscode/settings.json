@@ -1,0 +1,9 @@
+{
+  "js/ts.tsc.autoDetect": "off",
+  "search.exclude": {
+    "**/node_modules": true
+  },
+  "files.watcherExclude": {
+    "**/node_modules/**": true
+  }
+}
