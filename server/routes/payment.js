@@ -22,8 +22,8 @@ router.post('/init', async (req, res) => {
     const reference = `chopchat_${order.id}_${Date.now()}`;
 
     const paystackData = await initializeTransaction({
-      email: email || 'guest@chopchat.test',
-      amount: order.total, // already in kobo
+      email: email || 'guest@example.com',
+      amount: order.total, 
       reference,
       callbackUrl: `${process.env.APP_BASE_URL}/api/payment/callback`,
     });
@@ -43,6 +43,7 @@ router.post('/init', async (req, res) => {
     return res.status(500).json({ error: 'Could not start payment.' });
   }
 });
+
 
 router.get('/callback', async (req, res) => {
   const { reference } = req.query;
@@ -76,6 +77,7 @@ router.get('/callback', async (req, res) => {
     return res.redirect(`${frontendUrl}?payment=error`);
   }
 });
+
 
 router.get('/order/:id/status', async (req, res) => {
   const order = await prisma.order.findUnique({ where: { id: req.params.id } });

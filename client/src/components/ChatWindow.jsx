@@ -9,15 +9,14 @@ export default function ChatWindow() {
   const [typedInput, setTypedInput] = useState('');
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef(null);
-  const hasInitialized = useRef(false); // guards against StrictMode's double-invoke in dev
+  const hasInitialized = useRef(false);
 
-  // Scroll to latest message whenever the conversation grows.
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // On first load: check if we just came back from a Paystack redirect,
-  // and kick off the initial "welcome" message from the bot.
+
   useEffect(() => {
     if (hasInitialized.current) return; // StrictMode runs this effect twice in dev - skip the repeat
     hasInitialized.current = true;
@@ -26,26 +25,21 @@ export default function ChatWindow() {
     const paymentStatus = params.get('payment');
 
     if (paymentStatus === 'success') {
-      appendBotText('Payment successful! Your order is confirmed. 🎉');
+      appendBotText('Payment successful! Your order is confirmed. ');
     } else if (paymentStatus === 'failed') {
       appendBotText('Payment did not go through. You can try again from the main menu.');
     } else if (paymentStatus === 'error') {
       appendBotText('Something went wrong verifying your payment. Please contact support.');
     }
 
-    // Clean the URL so refreshing doesn't re-trigger the message.
+
     if (paymentStatus) {
       window.history.replaceState({}, '', window.location.pathname);
     }
 
-    // Kick off the conversation - sending "" isn't valid for our state
-    // machine, so we send a harmless first ping by reusing "0" logic is
-    // wrong too; instead call a dedicated first load by sending "97"-style
-    // no-op. Simplest: call sendChatInput with a neutral value the state
-    // machine treats as "show main menu" - our MAIN_MENU handler already
-    // falls through to mainMenuReply() for any unrecognized input.
+    
     handleSend('__init__', { silent: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, []);
 
   function appendBotText(text) {
