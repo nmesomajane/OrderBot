@@ -1,5 +1,4 @@
 
-
 const prisma = require('../db/prisma');
 const STATES = require('./states');
 
@@ -37,15 +36,17 @@ function mainMenuReply() {
 }
 
 async function menuListReply() {
-  const items = await prisma.menuItem.findMany({ where: { available: true } });
+  const items = await prisma.menuItem.findMany({
+    where: { available: true },
+    orderBy: { name: 'asc' },
+  });
   const options = items.map((item, i) => ({
     value: String(i + 1),
     label: `${item.name} - ${naira(item.price)}`,
   }));
   return {
     ...reply(STATES.BROWSING_CATEGORY, 'Here is our menu. Select an item:', options),
-    // stash the item id list in context so number->item mapping survives
-    // between this reply and the next incoming message
+
     _context: { itemIds: items.map((i) => i.id) },
   };
 }
@@ -58,7 +59,7 @@ function optionStepReply(menuItem, cartDraft) {
     // all option groups answered -> ask quantity
     return reply(
       STATES.AWAITING_QUANTITY,
-      `How many "${menuItem.name}" would you like? (type a number)`
+      `How many plates "${menuItem.name}" would you like? (type a number)`
     );
   }
 
@@ -97,7 +98,7 @@ async function handleMessage(deviceId, rawInput) {
   const cart = session.cart || [];
   const context = session.context || {};
 
-
+  
   if (input === '0' && session.state !== STATES.MAIN_MENU) {
     await prisma.session.update({
       where: { deviceId },
@@ -180,7 +181,16 @@ async function handleMessage(deviceId, rawInput) {
     case STATES.BROWSING_CATEGORY: {
       const itemIds = context.itemIds || [];
       const chosenId = itemIds[Number(input) - 1];
-      if (!chosenId) return menuListReply(); // invalid number, re-show menu
+
+      if (!chosenId) {
+   
+        const menuReply = await menuListReply();
+        await prisma.session.update({
+          where: { deviceId },
+          data: { context: menuReply._context },
+        });
+        return menuReply;
+      }
 
       const menuItem = await prisma.menuItem.findUnique({ where: { id: chosenId } });
       const draftContext = {
@@ -188,11 +198,14 @@ async function handleMessage(deviceId, rawInput) {
         optionStepIndex: 0,
         selectedOptions: [],
       };
+
+   
+      const nextReply = optionStepReply(menuItem, draftContext);
       await prisma.session.update({
         where: { deviceId },
-        data: { state: STATES.SELECTING_OPTIONS, context: draftContext },
+        data: { state: nextReply.state, context: draftContext },
       });
-      return optionStepReply(menuItem, draftContext);
+      return nextReply;
     }
 
    
@@ -227,7 +240,7 @@ async function handleMessage(deviceId, rawInput) {
       return nextReply;
     }
 
-   
+    
     case STATES.AWAITING_QUANTITY: {
       const qty = parseInt(input, 10);
       if (!qty || qty < 1) {
@@ -259,7 +272,7 @@ async function handleMessage(deviceId, rawInput) {
       return cartReviewReply(newCart);
     }
 
-  
+
     case STATES.CART_REVIEW: {
       if (input === '1') {
         const menuReply = await menuListReply();

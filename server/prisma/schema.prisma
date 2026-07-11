@@ -1,13 +1,84 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
-  url = env("DATABASE_URL")
+  url      = env("DATABASE_URL")
+}
+
+
+model MenuItem {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  category    String
+  price       Int
+  options     Json?
+  available   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("menu_items")
+}
+
+
+model Session {
+  deviceId  String   @id
+  state     String   @default("MAIN_MENU")
+  cart      Json     @default("[]")
+  context   Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders Order[]
+
+  @@map("sessions")
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
+
+model Order {
+  id           String      @id @default(uuid())
+  deviceId     String
+  status       OrderStatus @default(PENDING)
+  items        Json
+  total        Int
+  scheduledFor DateTime?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  session  Session   @relation(fields: [deviceId], references: [deviceId])
+  payments Payment[]
+
+  @@map("orders")
+}
+
+enum PaymentStatus {
+  INITIALIZED
+  SUCCESS
+  FAILED
+}
+
+model Payment {
+  id        String        @id @default(uuid())
+  orderId   String
+  reference String        @unique
+  amount    Int
+  status    PaymentStatus @default(INITIALIZED)
+  raw       Json?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@map("payments")
 }
