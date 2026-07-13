@@ -9,6 +9,8 @@ const paymentRoutes = require('./routes/payment');
 const paystackWebhookHandler = require('./routes/webhook');
 
 const app = express();
+console.log("CLIENT_BASE_URL:", process.env.CLIENT_BASE_URL);
+console.log("PORT:", process.env.PORT);
 
 app.use(cors({ origin: process.env.CLIENT_BASE_URL, credentials: true }));
 
