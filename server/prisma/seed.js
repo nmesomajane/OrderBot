@@ -1,11 +1,11 @@
-
-
+require('dotenv').config();
 const prisma = require('../db/prisma');
 const menu = require('../data/menu');
 
 async function main() {
   console.log('Seeding menu items...');
 
+  
   await prisma.menuItem.deleteMany();
 
   for (const item of menu) {
